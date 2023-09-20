@@ -1,0 +1,13 @@
+# Ignore everything...
+*/
+.gsd-keyboard.settings-ported
+QtProject.conf
+dleyna-renderer-service.conf
+mimeapps.list
+monitors.xml
+user-dirs.dirs
+user-dirs.locale
+
+# But these ones
+!emacs/
+!qtile/

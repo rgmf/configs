@@ -1,0 +1,345 @@
+#+TITLE: Román Martínez Emacs Config
+#+AUTHOR: Román Martínez <rgmf@riseup.net>
+
+* Variables
+#+begin_src emacs-lisp
+(defvar rgmf/default-font-size 150)
+#+end_src
+
+* Package configuration
+#+begin_src emacs-lisp
+  (require 'package)
+  (setq package-archives '(("melpa" . "https://melpa.org/packages/")
+                           ("org" . "https://orgmode.org/elpa/")
+                           ("elpa" . "https://elpa.gnu.org/packages/")
+                           ("nongnu" . "https://elpa.nongnu.org/nongnu/")))
+
+  (package-initialize)
+  (unless package-archive-contents
+    (package-refresh-contents))
+
+  (require 'use-package)
+  (setq use-package-always-ensure t)
+#+end_src
+
+* UI configuration
+** Basic configuration
+#+begin_src emacs-lisp
+  (setq inhibit-startup-message t)
+  (setq make-backup-files nil)
+
+  (scroll-bar-mode -1)        ; Disable visible scrollbar
+  (tool-bar-mode -1)          ; Disable the toolbar
+  (tooltip-mode -1)           ; Disable tooltips
+  (set-fringe-mode 10)        ; Give some breathing room
+  (global-visual-line-mode t)
+
+  (menu-bar-mode -1)          ; Disable the menu bar
+
+  ;; Set up the visible bell
+  (setq visible-bell t)
+
+  ;; Column and line numbers
+  (column-number-mode)
+  (global-display-line-numbers-mode t)
+
+  ;; Disable line numbers for some modes
+  (dolist (mode '(org-mode-hook
+		  term-mode-hook
+		  shell-mode-hook
+		  eshell-mode-hook))
+    (add-hook mode (lambda () (display-line-numbers-mode 0))))
+
+  ;; Make ESC quit prompts
+  (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
+#+end_src
+
+** Font configuration
+#+begin_src emacs-lisp
+  (set-face-attribute 'default nil :font "Fira Code Retina" :height rgmf/default-font-size)
+  (set-face-attribute 'font-lock-keyword-face nil :weight 'bold)
+#+end_src
+
+** Theme
+#+begin_src emacs-lisp
+  (setq custom-safe-themes t)
+  ;;(load-theme 'tango-dark)
+
+  ;; Doom themes
+  (use-package doom-themes
+    :init (load-theme 'doom-gruvbox))
+  ;; :config
+  ;; (setq doom-themes-enable-bold t      ; if nil, bold is universally disabled
+  ;;      doom-themes-enable-italic t))  ; if nil, italics is universally disabled
+#+end_src
+
+** Modeline configuration
+#+begin_src emacs-lisp
+  ;; It needs Nerd Fonts installed on the system and this package so
+  ;; doom-modeline can show icons
+  ;; In Arch Linux: pacman -S nerd-fonts
+  ;; (use-package nerd-icons)
+
+  (use-package doom-modeline
+    :ensure t
+    :init (doom-modeline-mode 1)
+    :custom ((doom-modeline-height 15)))
+#+end_src
+** Transparency
+With Emacs version 29, true transparency has been added.
+#+begin_src emacs-lisp
+  ;; (add-to-list 'default-frame-alist '(alpha-background . 90))
+#+end_src
+
+* Which key package
+#+begin_src emacs-lisp
+  (use-package which-key
+    :init (which-key-mode)
+    :diminish which-key-mode
+    :config
+    (setq which-key-idle-delay 1))
+#+end_src
+
+* Ivy and Counsel for completions
+#+begin_src emacs-lisp
+  (use-package ivy
+    :diminish
+    :bind (("C-s" . swiper)
+	   :map ivy-minibuffer-map
+	   ("TAB" . ivy-alt-done)
+	   ("C-l" . ivy-alt-done)
+	   ("C-j" . ivy-next-line)
+	   ("C-k" . ivy-previous-line)
+	   :map ivy-switch-buffer-map
+	   ("C-k" . ivy-previous-line)
+	   ("C-l" . ivy-done)
+	   ("C-d" . ivy-switch-buffer-kill)
+	   :map ivy-reverse-i-search-map
+	   ("C-k" . ivy-previous-line)
+	   ("C-d" . ivy-reverse-i-search-kill))
+    :config
+    (ivy-mode 1))
+
+  (use-package ivy-rich
+    :init
+    (ivy-rich-mode 1))
+
+  (use-package counsel
+    :bind (("M-x" . counsel-M-x)
+	   ("C-x b" . counsel-ibuffer)
+	   ("C-x C-f" . counsel-find-file)
+	   :map minibuffer-local-map
+	   ("C-r" . 'counsel-minibuffer-history)))
+#+end_src
+
+* Org-mode
+** Basic
+#+begin_src emacs-lisp
+  (use-package toc-org
+    :commands toc-org-enable
+    :init (add-hook 'org-mode-hook 'toc-org-enable))
+
+  (add-hook 'org-mode-hook 'org-indent-mode)
+  (use-package org-bullets)
+  (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
+#+end_src
+
+** Presentation
+#+begin_src emacs-lisp
+  (use-package visual-fill-column
+    :config
+    (setq visual-fill-column-width 110
+          visual-fill-column-center-text t))
+
+  (use-package org-present)
+
+  (defvar rgmf/variable-width-font "Fira Code"
+    "The font to use for variable-pitch (document) text.")
+
+  (set-face-attribute 'variable-pitch nil :font rgmf/variable-width-font :weight 'light :height 1.3)
+
+  (defun rgmf/org-present-prepare-slide (buffer-name heading)
+    ;; Show only top-level headlines
+    (org-overview)
+    ;; Unfold the current entry
+    (org-show-entry)
+    ;; Show only direct subheadings of the slide but don't expand them
+    (org-show-children))
+
+  (defun rgmf/org-present-start ()
+    ;; Tweak font sizes
+    (setq-local face-remapping-alist '((default (:height 1.5) variable-pitch)
+                                       (header-line (:height 4.0) variable-pitch)
+                                       (org-document-title (:height 1.75) org-document-title)
+                                       (org-code (:height 1.55) org-code)
+                                       (org-verbatim (:height 1.55) org-verbatim)
+                                       (org-block (:height 1.25) org-block)
+                                       (org-block-begin-line (:height 0.7) org-block)))
+    ;; Set a blank header line string to create blank space at the top
+    (setq header-line-format " ")
+    ;; Display inline images automatically
+    (org-display-inline-images)
+    ;; Center the presentation and wrap lines
+    (visual-fill-column-mode 1)
+    (visual-line-mode 1))
+
+  (defun rgmf/org-present-end ()
+    ;; Reset font customizations
+    (setq-local face-remapping-alist '((default variable-pitch default)))
+    ;; Clear the header line string so that it isn't displayed
+    (setq header-line-format nil)
+    ;; Stop displaying inline images
+    (org-remove-inline-images)
+    ;; Stop centering the document
+    (visual-fill-column-mode 0)
+    (visual-line-mode 0))
+
+  (add-hook 'org-present-mode-hook 'rgmf/org-present-start)
+  (add-hook 'org-present-mode-quit-hook 'rgmf/org-present-end)
+  (add-hook 'org-present-after-navigate-functions 'rgmf/org-present-prepare-slide)
+#+end_src
+
+* Development configuration
+** Multiple cursor (multiline editing)
+#+begin_src emacs-lisp
+  (use-package multiple-cursors
+    :ensure t
+    :config
+    ;; Do what I mean
+    (global-set-key (kbd "C-S-j") 'mc/mark-all-dwin) ; both marked and unmarked region (multiple presses)
+    ;; For continuos lines: mark lines, then create cursors (can be mid-line)
+    (global-set-key (kbd "C-S-c C-S-c") 'mc/edit-lines)
+    ;; Expand region (also from Magnar Sveen)
+    (global-set-key (kbd "C-S-l") 'er/expand-region) ; only type once, then l, -, 0
+    ;; Select region first, then create cursors
+    (global-set-key (kbd "C-c C-<") 'mc/mark-all-like-this) ; select text first (finds all occurrences)
+    (global-set-key (kbd "C-<") 'mc/mark-previous-like-this)
+    (global-set-key (kbd "C->") 'mc/mark-next-like-this))
+#+end_src
+
+** Highlight TODO
+#+begin_src emacs-lisp
+  (use-package hl-todo
+    :config
+    ;; Activate hl-todo-mode with some languages
+    (add-hook 'python-mode-hook 'hl-todo-mode)
+    ;; Keyboard
+    (keymap-set hl-todo-mode-map "C-c p" #'hl-todo-previous)
+    (keymap-set hl-todo-mode-map "C-c n" #'hl-todo-next)
+    (keymap-set hl-todo-mode-map "C-c o" #'hl-todo-occur)
+    (keymap-set hl-todo-mode-map "C-c i" #'hl-todo-insert))
+#+end_src
+
+** treemacs
+#+begin_src emacs-lisp
+  (use-package treemacs
+    :ensure t
+    :defer t)
+#+end_src
+
+** Projectile
+#+begin_src emacs-lisp
+  (use-package projectile
+    :diminish projectile-mode
+    :config (projectile-mode)
+    :custom ((projectile-completion-system 'ivy))
+    :bind-keymap
+    ("C-c p" . projectile-command-map)
+    :init
+  ;;   ;; NOTE: Set this to the folder where you keep your Git repos!
+  ;;   ;; (when (file-directory-p "~/Projects/Code")
+  ;;   ;;   (setq projectile-project-search-path '("~/Projects/Code")))
+    (setq projectile-switch-project-action #'projectile-dired))
+
+  (use-package counsel-projectile
+    :config (counsel-projectile-mode))
+#+end_src
+
+** Python
+To make this configuration work properly you need to install on your system `pylsp` and other packages. I installed the following:
+pip install --user "python-language-server[all]"
+pip install pylsp-rope
+pip install pylsp-mypy
+
+Also, you can install:
+- Rope for completions and renaming
+- Pyflakes linter to detect various errors
+- McCabe linter for complexity checking
+- pycodestyle linter for style checking
+- pydocstyle linter for docstring style checking (disabled by default)
+- autopep8 for code formatting
+- YAPF for code formatting (preferred over autopep8)
+- flake8 for error checking (disabled by default)
+- pylint for code linting (disabled by default)
+
+More in: https://github.com/python-lsp/python-lsp-server
+
+*** Python general configuration
+#+begin_src emacs-lisp
+  (use-package python-mode
+    :ensure t)
+
+  ;;(setq python-shell-interpreter "ipython"
+  ;;      python-shell-interpreter-args "-i --simple-prompt --InteractiveShell.display_page=True")
+#+end_src
+
+*** Virtual Environment
+#+begin_src emacs-lisp
+  (use-package pyvenv
+    :config
+    (pyvenv-mode 1))
+#+end_src
+
+** lsp-mode, lsp-ui and company
+#+begin_src emacs-lisp
+  (use-package lsp-mode
+    :init
+    (setq lsp-keymap-prefix "C-c l")
+    :hook ((python-mode . lsp-deferred)
+           (lsp-mode . lsp-enable-which-key-integration))
+    :commands lsp lsp-deffered
+    :config
+    (setq lsp-pylsp-plugins
+          '((pylsp-diagnostics-flake8 :enabled t)
+            (pylsp-diagnostics-pylint :enabled t)
+            (pylsp-diagnostics-pyflakes :enabled t))))
+
+  (use-package lsp-ivy :commands lsp-ivy-workspace-symbol)
+  (use-package lsp-treemacs :commands lsp-treemacs-errors-list)
+  (use-package lsp-ui :commands lsp-ui-mode)
+
+  ;; Read: https://emacs-lsp.github.io/lsp-mode/page/performance/
+  (setq gc-cons-threshold 100000000)
+  (setq read-process-output-max (* 1024 1024)) ;; 1mb
+
+  (use-package company
+    :after lsp-mode
+    :hook (lsp-mode . company-mode)
+    :bind (:map company-active-map
+                ("<tab>" . company-complete-selection)
+                ([escape] . company-abort))
+    (:map lsp-mode-map
+          ("<tab>" . company-indent-or-complete-common))
+    :custom
+    (company-minimum-prefix-length 1)
+    (company-idle-delay 0.0))
+#+end_src
+
+* Global keybindings
+#+begin_src emacs-lisp
+  ;; Toggle treemacs
+  (global-set-key (kbd "C-c t") 'treemacs)
+  ;; Select symbol on cursor
+  (global-set-key (kbd "M-2") 'mark-sexp)
+  ;; Next/prev window movements (by default "Ctrl-x o")
+  (global-set-key (kbd "C-x .") #'other-window)
+  (global-set-key (kbd "C-x ,") #'prev-window)
+  (defun prev-window ()
+    (interactive)
+    (other-window -1))
+  ;; Next/prev buffer
+  (global-set-key (kbd "C-.") #'next-buffer)
+  (global-set-key (kbd "C-,") #'previous-buffer)
+  ;; Open lsp-ui-imenu
+  (global-set-key (kbd "C-c l i") #'lsp-ui-imenu)
+#+end_src
