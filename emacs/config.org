@@ -191,6 +191,13 @@ With Emacs version 29, true transparency has been added.
   (add-hook 'org-present-after-navigate-functions 'rgmf/org-present-prepare-slide)
 #+end_src
 
+* Markdown
+#+begin_src emacs-lisp
+  (use-package markdown-mode
+    :ensure t
+    :mode ("README\\.md\\'" . gfm-mode)
+    :init (setq markdown-command "multimarkdown"))
+#+end_src
 * Development configuration
 ** Multiple cursor (multiline editing)
 #+begin_src emacs-lisp
@@ -282,19 +289,26 @@ More in: https://github.com/python-lsp/python-lsp-server
     (pyvenv-mode 1))
 #+end_src
 
-** lsp-mode, lsp-ui and company
+** flycheck
+#+begin_src emacs-lisp
+  (use-package flycheck
+    :ensure t
+    :init (global-flycheck-mode))
+#+end_src
+
+** lsp-mode, lsp-ui, company, flycheck
 #+begin_src emacs-lisp
   (use-package lsp-mode
     :init
     (setq lsp-keymap-prefix "C-c l")
     :hook ((python-mode . lsp-deferred)
            (lsp-mode . lsp-enable-which-key-integration))
-    :commands lsp lsp-deffered
+    :commands lsp lsp-deferred
     :config
     (setq lsp-pylsp-plugins
-          '((pylsp-diagnostics-flake8 :enabled t)
-            (pylsp-diagnostics-pylint :enabled t)
-            (pylsp-diagnostics-pyflakes :enabled t))))
+          '((pylsp-diagnostics-flake8 :enabled t))))
+            ;;(pylsp-diagnostics-pylint :enabled t)
+            ;;(pylsp-diagnostics-pyflakes :enabled t))))
 
   (use-package lsp-ivy :commands lsp-ivy-workspace-symbol)
   (use-package lsp-treemacs :commands lsp-treemacs-errors-list)
@@ -315,6 +329,19 @@ More in: https://github.com/python-lsp/python-lsp-server
     :custom
     (company-minimum-prefix-length 1)
     (company-idle-delay 0.0))
+
+  (use-package lsp-python-ms
+    :ensure t
+    :init (setq lsp-python-ms-auto-install-server t)
+    :hook (python-mode . (lambda ()
+                           (require 'lsp-python-ms)
+                           (lsp)))
+    :config (setq lsp-python-ms-executable (executable-find "python-language-server")))
+
+  ;; Habilitar Flycheck en LSP
+  (with-eval-after-load 'lsp
+    (require 'lsp-flycheck)
+    (add-hook 'lsp-managed-mode-hook 'lsp-flycheck-enable))
 #+end_src
 
 * Global keybindings
