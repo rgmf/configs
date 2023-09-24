@@ -105,12 +105,12 @@ keys = [
     Key(
         [mod], "s",
         lazy.spawn("maim -s | xclip -selection clipboard -t image/png"),
-        "Select an area and copy the selection to your clipboard"
+        desc="Select an area and copy the selection to your clipboard"
     ),
     Key(
         [mod, "Shift"], "s",
         lazy.spawn("maim ~/$(date +%s).png"),
-        "Save a desktop screenshot in user personal folder."
+        desc="Save a desktop screenshot in user personal folder."
     ),
 ]
 
@@ -170,7 +170,9 @@ screens = [
                 widget.CurrentLayout(),
                 widget.GroupBox(),
                 widget.Prompt(),
-                widget.WindowName(),
+                # widget.WindowName(),
+                widget.TaskList(),
+                widget.Battery(),
                 widget.Chord(
                     chords_colors={
                         "launch": ("#ff0000", "#ffffff"),
@@ -182,13 +184,20 @@ screens = [
                 # NB Systray is incompatible with Wayland, consider using StatusNotifier instead
                 # widget.StatusNotifier(),
                 widget.Systray(),
-                widget.Clock(format="%Y-%m-%d %a %I:%M %p"),
-                widget.QuickExit(),
+                widget.Clock(format="%Y-%m-%d %a %H:%M %p"),
+                widget.PulseVolume(
+                    emoji=True
+                ),
+                widget.QuickExit(
+                    countdown_start=1
+                ),
             ],
             24,
             # border_width=[2, 0, 2, 0],  # Draw top and bottom borders
             # border_color=["ff00ff", "000000", "ff00ff", "000000"]  # Borders are magenta
         ),
+        wallpaper="/home/roman/.config/wallpapers/gnu_wallpaper.jpg",
+        wallpaper_mode="fill",
     ),
     Screen(
         bottom=bar.Bar(
@@ -196,7 +205,9 @@ screens = [
                 widget.CurrentLayout(),
                 widget.GroupBox(),
                 widget.Prompt(),
-                widget.WindowName(),
+                # widget.WindowName(),
+                widget.TaskList(),
+                widget.Battery(),
                 widget.Chord(
                     chords_colors={
                         "launch": ("#ff0000", "#ffffff"),
@@ -208,13 +219,20 @@ screens = [
                 # NB Systray is incompatible with Wayland, consider using StatusNotifier instead
                 # widget.StatusNotifier(),
                 widget.Systray(),
-                widget.Clock(format="%Y-%m-%d %a %I:%M %p"),
-                widget.QuickExit(),
+                widget.Clock(format="%Y-%m-%d %a %H:%M %p"),
+                widget.PulseVolume(
+                    emoji=True
+                ),
+                widget.QuickExit(
+                    countdown_start=1
+                ),
             ],
             24,
             # border_width=[2, 0, 2, 0],  # Draw top and bottom borders
             # border_color=["ff00ff", "000000", "ff00ff", "000000"]  # Borders are magenta
         ),
+        wallpaper="/home/roman/.config/wallpapers/gnu_wallpaper.jpg",
+        wallpaper_mode="fill",
     ),
 ]
 

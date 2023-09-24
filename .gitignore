@@ -11,3 +11,4 @@ user-dirs.locale
 # But these ones
 !emacs/
 !qtile/
+!wallpapers/
