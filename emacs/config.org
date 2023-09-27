@@ -273,13 +273,15 @@ Also, you can install:
 
 More in: https://github.com/python-lsp/python-lsp-server
 
-*** Python general configuration
+*** Importmagic
+It requires to install:
+- importmagic (I installed it from AUR with yay)
+- python epc (I installed it from AUR with yay)
 #+begin_src emacs-lisp
-  (use-package python-mode
-    :ensure t)
-
-  ;;(setq python-shell-interpreter "ipython"
-  ;;      python-shell-interpreter-args "-i --simple-prompt --InteractiveShell.display_page=True")
+  (use-package importmagic
+    :ensure t
+    :config
+    (add-hook 'python-mode-hook 'importmagic-mode))
 #+end_src
 
 *** Virtual Environment
