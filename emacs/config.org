@@ -3,7 +3,7 @@
 
 * Variables
 #+begin_src emacs-lisp
-(defvar rgmf/default-font-size 150)
+(defvar rgmf/default-font-size 125)
 #+end_src
 
 * Package configuration
@@ -229,11 +229,19 @@ With Emacs version 29, true transparency has been added.
     (keymap-set hl-todo-mode-map "C-c i" #'hl-todo-insert))
 #+end_src
 
-** treemacs
+** Magit
+#+begin_src emacs-lisp
+  (use-package magit
+    :ensure t)
+#+end_src
+** Treemacs
 #+begin_src emacs-lisp
   (use-package treemacs
     :ensure t
     :defer t)
+
+  (with-eval-after-load 'treemacs
+    (define-key treemacs-mode-map [mouse-1] #'treemacs-single-click-expand-action))
 #+end_src
 
 ** Projectile
@@ -255,12 +263,16 @@ With Emacs version 29, true transparency has been added.
 #+end_src
 
 ** Python
-To make this configuration work properly you need to install on your system `pylsp` and other packages. I installed the following:
-pip install --user "python-language-server[all]"
-pip install pylsp-rope
-pip install pylsp-mypy
+To make this configuration work properly you need to install on your system `pylsp` and other packages. I installed the following in my Arch Linux:
+pacman -S python-lsp-server
+pacman -S python-pylint
+pacman -S autopep8
+pacman -S flake8
 
-Also, you can install:
+More information (below this webpage you have dependencies/options/recommendations):
+https://archlinux.org/packages/extra/any/python-lsp-server/
+
+Software/options description:
 - Rope for completions and renaming
 - Pyflakes linter to detect various errors
 - McCabe linter for complexity checking
@@ -278,10 +290,10 @@ It requires to install:
 - importmagic (I installed it from AUR with yay)
 - python epc (I installed it from AUR with yay)
 #+begin_src emacs-lisp
-  (use-package importmagic
-    :ensure t
-    :config
-    (add-hook 'python-mode-hook 'importmagic-mode))
+  ;; (use-package importmagic
+  ;;   :ensure t
+  ;;   :config
+  ;;   (add-hook 'python-mode-hook 'importmagic-mode))
 #+end_src
 
 *** Virtual Environment
@@ -291,14 +303,14 @@ It requires to install:
     (pyvenv-mode 1))
 #+end_src
 
-** flycheck
+** Flycheck
 #+begin_src emacs-lisp
   (use-package flycheck
     :ensure t
     :init (global-flycheck-mode))
 #+end_src
 
-** lsp-mode, lsp-ui, company, flycheck
+** Lsp-mode, lsp-ui, company, flycheck
 #+begin_src emacs-lisp
   (use-package lsp-mode
     :init
@@ -307,6 +319,7 @@ It requires to install:
            (lsp-mode . lsp-enable-which-key-integration))
     :commands lsp lsp-deferred
     :config
+    (setq lsp-enable-snippet nil)
     (setq lsp-pylsp-plugins
           '((pylsp-diagnostics-flake8 :enabled t))))
             ;;(pylsp-diagnostics-pylint :enabled t)

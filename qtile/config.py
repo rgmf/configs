@@ -24,7 +24,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from libqtile import bar, layout, widget
+import os
+import subprocess
+
+from libqtile import bar, layout, widget, hook
 from libqtile.config import Click, Drag, Group, Key, Match, Screen
 from libqtile.lazy import lazy
 from libqtile.utils import guess_terminal
@@ -41,6 +44,8 @@ keys = [
     Key([mod], "j", lazy.layout.down(), desc="Move focus down"),
     Key([mod], "k", lazy.layout.up(), desc="Move focus up"),
     Key([mod], "space", lazy.layout.next(), desc="Move window focus to other window"),
+    # Key([mod], "Tab", lazy.layout.next(), desc="Move window focus to other window"),
+    Key([mod], "Tab", lazy.group.focus_back(), desc="Alternate between two most recent windows"),
     # Move windows between left/right columns or move up/down in current stack.
     # Moving out of range in Columns layout will create new column.
     Key([mod, "shift"], "h", lazy.layout.shuffle_left(), desc="Move window to the left"),
@@ -66,15 +71,15 @@ keys = [
     ),
     Key([mod], "Return", lazy.spawn(terminal), desc="Launch terminal"),
     # Toggle between different layouts as defined below
-    Key([mod], "Tab", lazy.next_layout(), desc="Toggle between layouts"),
-    Key([mod], "w", lazy.window.kill(), desc="Kill focused window"),
+    Key([mod], "w", lazy.next_layout(), desc="Toggle between layouts"),
+    Key([mod], "q", lazy.window.kill(), desc="Kill focused window"),
     Key([mod, "control"], "r", lazy.reload_config(), desc="Reload the config"),
     Key([mod, "control"], "q", lazy.shutdown(), desc="Shutdown Qtile"),
     Key([mod], "r", lazy.spawncmd(), desc="Spawn a command using a prompt widget"),
     Key([mod], "period", lazy.next_screen(), desc="Next monitor"),
     # Rofi
     Key([mod], "m", lazy.spawn("rofi -show drun"), desc="Open Rofi (Window Switcher)"),
-    # Control volume
+    # Control volume with pactl
     Key(
         [mod], "XF86AudioLowerVolume",
         lazy.spawn("pactl set-sink-volume @DEFAULT_SINK@ -5%"),
@@ -90,6 +95,22 @@ keys = [
         lazy.spawn("pactl set-sink-mute @DEFAULT_SINK@ toggle"),
         desc="Mute/unmute volume"
     ),
+    # Control volume with amixer (install alsa-utils)
+    # Key(
+    #     [mod], "XF86AudioLowerVolume",
+    #     lazy.spawn("amixer -c 0 sset Master 5- unmute"),
+    #     desc="Low volume a 5%"
+    # ),
+    # Key(
+    #     [mod], "XF86AudioRaiseVolume",
+    #     lazy.spawn("amixer -c 0 sset Master 5+ unmute"),
+    #     desc="Raise volume a 5%"
+    # ),
+    # Key(
+    #     [mod], "XF86AudioMute",
+    #     lazy.spawn("amixer -q set Master toggle"),
+    #     desc="Mute/unmute volume"
+    # ),
     # Brightness control
     Key(
         [mod], "XF86MonBrightnessDown",
@@ -102,16 +123,27 @@ keys = [
         desc="Up brightness"
     ),
     # Screenshots with maim and xclip
+    # Key(
+    #     [mod], "s",
+    #     lazy.spawn("maim -s | xclip -selection clipboard -t image/png"),
+    #     desc="Select an area and copy the selection to your clipboard"
+    # ),
+    # Key(
+    #     [mod, "Shift"], "s",
+    #     lazy.spawn("maim ~/$(date +%s).png"),
+    #     desc="Save a desktop screenshot in user personal folder."
+    # ),
+    # Screenshots with xfce4-screenshooter
     Key(
         [mod], "s",
-        lazy.spawn("maim -s | xclip -selection clipboard -t image/png"),
-        desc="Select an area and copy the selection to your clipboard"
+        lazy.spawn("xfce4-screenshooter"),
+        desc="Launch xfce4-screenshooter"
     ),
-    Key(
-        [mod, "Shift"], "s",
-        lazy.spawn("maim ~/$(date +%s).png"),
-        desc="Save a desktop screenshot in user personal folder."
-    ),
+
+    # Custom spawn commands
+    Key([mod], "e", lazy.spawn("emacs")),
+    Key([mod], "f", lazy.spawn("firefox")),
+    Key([mod], "p", lazy.spawn("pcmanfm")),
 ]
 
 groups = [Group(i) for i in "123456789"]
@@ -127,16 +159,16 @@ for i in groups:
                 desc="Switch to group {}".format(i.name),
             ),
             # mod1 + shift + letter of group = switch to & move focused window to group
-            Key(
-                [mod, "shift"],
-                i.name,
-                lazy.window.togroup(i.name, switch_group=True),
-                desc="Switch to & move focused window to group {}".format(i.name),
-            ),
+            # Key(
+            #     [mod, "shift"],
+            #     i.name,
+            #     lazy.window.togroup(i.name, switch_group=True),
+            #     desc="Switch to & move focused window to group {}".format(i.name),
+            # ),
             # Or, use below if you prefer not to switch to that group.
             # # mod1 + shift + letter of group = move focused window to group
-            # Key([mod, "shift"], i.name, lazy.window.togroup(i.name),
-            #     desc="move focused window to group {}".format(i.name)),
+            Key([mod, "shift"], i.name, lazy.window.togroup(i.name),
+                desc="move focused window to group {}".format(i.name)),
         ]
     )
 
@@ -165,7 +197,7 @@ extension_defaults = widget_defaults.copy()
 
 screens = [
     Screen(
-        bottom=bar.Bar(
+        top=bar.Bar(
             [
                 widget.CurrentLayout(),
                 widget.GroupBox(),
@@ -185,14 +217,15 @@ screens = [
                 # widget.StatusNotifier(),
                 widget.Systray(),
                 widget.Clock(format="%Y-%m-%d %a %H:%M %p"),
-                widget.PulseVolume(
-                    emoji=True
+                widget.Volume(
+                    emoji=True,
+                    emoji_list=['🔇', '🔈', '🔉', '🔊']
                 ),
                 widget.QuickExit(
                     countdown_start=1
                 ),
             ],
-            24,
+            30,
             # border_width=[2, 0, 2, 0],  # Draw top and bottom borders
             # border_color=["ff00ff", "000000", "ff00ff", "000000"]  # Borders are magenta
         ),
@@ -200,7 +233,7 @@ screens = [
         wallpaper_mode="fill",
     ),
     Screen(
-        bottom=bar.Bar(
+        top=bar.Bar(
             [
                 widget.CurrentLayout(),
                 widget.GroupBox(),
@@ -218,16 +251,17 @@ screens = [
                 # widget.TextBox("Press &lt;M-r&gt; to spawn", foreground="#d75f5f"),
                 # NB Systray is incompatible with Wayland, consider using StatusNotifier instead
                 # widget.StatusNotifier(),
-                widget.Systray(),
+                # widget.Systray(),
                 widget.Clock(format="%Y-%m-%d %a %H:%M %p"),
-                widget.PulseVolume(
-                    emoji=True
+                widget.Volume(
+                    emoji=True,
+                    emoji_list=['🔇', '🔈', '🔉', '🔊']
                 ),
                 widget.QuickExit(
                     countdown_start=1
                 ),
             ],
-            24,
+            30,
             # border_width=[2, 0, 2, 0],  # Draw top and bottom borders
             # border_color=["ff00ff", "000000", "ff00ff", "000000"]  # Borders are magenta
         ),
@@ -280,3 +314,9 @@ wl_input_rules = None
 # We choose LG3D to maximize irony: it is a 3D non-reparenting WM written in
 # java that happens to be on java's whitelist.
 wmname = "LG3D"
+
+
+@hook.subscribe.startup_once
+def autostart():
+    home = os.path.expanduser('~')
+    subprocess.Popen([home + '/.config/qtile/startup.sh'])
